@@ -30,7 +30,7 @@ export function getConfig(): AppConfig {
   const openaiApiKey = requireEnv("OPENAI_API_KEY");
   const openaiProjectId = process.env.OPENAI_PROJECT_ID ?? null;
   const modelName = process.env.MODEL_NAME ?? "gpt-4.1-mini";
-  const dbPath = resolve(process.env.TS_DB_PATH ?? "./data/ts_sessions.db");
+  const dbPath = resolve(process.env.DB_PATH ?? "./data/sessions.db");
   const temperature = temperatureValidation();
   const summaryTokenTarget = numberEnv("SUMMARY_TOKEN_TARGET", 700);
   const summaryTriggerTokens = numberEnv("SUMMARY_TRIGGER_TOKENS", 70000);

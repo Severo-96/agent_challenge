@@ -15,7 +15,7 @@ describe("config", () => {
     delete process.env.OPENAI_PROJECT_ID;
     delete process.env.MODEL_NAME;
     delete process.env.TEMPERATURE;
-    delete process.env.TS_DB_PATH;
+    delete process.env.DB_PATH;
     delete process.env.SUMMARY_TOKEN_TARGET;
     delete process.env.SUMMARY_TRIGGER_TOKENS;
   });
@@ -34,7 +34,7 @@ describe("config", () => {
     expect(config.openaiProjectId).toBeNull();
     expect(config.modelName).toBe("gpt-4.1-mini");
     expect(config.temperature).toBe(0.5);
-    expect(config.dbPath).toContain("ts_sessions.db");
+    expect(config.dbPath).toContain("sessions.db");
     expect(config.summaryTokenTarget).toBe(700);
     expect(config.summaryTriggerTokens).toBe(70000);
   });
@@ -100,9 +100,9 @@ describe("config", () => {
     expect(() => getConfig()).toThrow("Invalid TEMPERATURE value");
   });
 
-  test("getConfig uses TS_DB_PATH when provided", async () => {
+    test("getConfig uses DB_PATH when provided", async () => {
     process.env.OPENAI_API_KEY = "test-key";
-    process.env.TS_DB_PATH = "/custom/path/db.sqlite";
+    process.env.DB_PATH = "/custom/path/db.sqlite";
 
     const { getConfig } = await import("../src/config.js");
     const config = getConfig();

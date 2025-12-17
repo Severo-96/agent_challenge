@@ -103,6 +103,9 @@ export async function chatLoop(opts: {
         }
       );
 
+      // Ensure newline after streaming to prevent readline from overwriting
+      process.stdout.write("\n");
+
       // Persist tool outputs
       for (const tr of result.toolResults) {
         opts.store.appendMessage({

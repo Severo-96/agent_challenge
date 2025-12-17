@@ -9,16 +9,10 @@ A CLI assistant built with TypeScript using OpenAI (tools/function calling + tra
 npm install
 ```
 
-2) Set environment variables (create a `.env` file):  
-```
-OPENAI_API_KEY=...
-# optional for observability/traces in OpenAI dashboard
-OPENAI_PROJECT_ID=...
-MODEL_NAME=gpt-4.1-mini
-TEMPERATURE=0.5
-DB_PATH=./data/sessions.db
-SUMMARY_TOKEN_TARGET=700
-SUMMARY_TRIGGER_TOKENS=70000
+2) Set environment variables:
+```bash
+cp .env.example .env
+# Edit .env and add your OPENAI_API_KEY
 ```
 
 3) Run the chat (CLI)  
@@ -44,13 +38,12 @@ Commands during chat:
 src/
  ├─ config.ts        # env/config
  ├─ db.ts            # SQLite store (sessions/messages)
- ├─ prompts.ts       # system prompt
  ├─ types.ts         # shared TypeScript types
  ├─ memory/          # context building + summarization
  ├─ tools/           # external tools (country/exchange)
- ├─ agent.ts         # OpenAI orchestration + function calling
+ ├─ agent/           # OpenAI orchestration + function calling + system prompt
  ├─ cli/             # CLI interface
- ├─ util/            # utilities (token counting)
+ ├─ util/            # utilities (token counting, fetch retry)
  └─ index.ts         # entrypoint
 test/                # vitest tests
 ```
@@ -65,5 +58,5 @@ Cover basic SQLite operations and summarization triggering without calling the r
 
 ## 📝 Notes
 
-- This version is **100% TypeScript** (the legacy Python code was removed).
 - External tools don't require API keys (REST Countries and ExchangeRate). The only required key is `OPENAI_API_KEY`.
+- See `.env.example` for all available configuration options.

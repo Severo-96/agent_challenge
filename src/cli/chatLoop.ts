@@ -1,7 +1,7 @@
 import { createInterface } from "node:readline";
 import type OpenAI from "openai";
 import type { SqliteStore } from "../db.js";
-import { systemMessage, runAgentTurnStreaming } from "../agent.js";
+import { systemMessage, runAgentTurnStreaming } from "../agent/index.js";
 import { buildContextMessages, maybeSummarizeSession } from "../memory/index.js";
 import type { AppConfig } from "../types.js";
 import { EXIT_COMMANDS, CLEAR_COMMANDS } from "./constants.js";

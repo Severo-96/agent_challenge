@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SqliteStore } from "../src/db.js";
 import { buildContextMessages, maybeSummarizeSession } from "../src/memory/index.js";
-import { systemMessage } from "../src/agent.js";
+import { systemMessage } from "../src/agent/index.js";
 
 function makeTempDbPath(): string {
   const dir = mkdtempSync(join(tmpdir(), "ts-agent-"));

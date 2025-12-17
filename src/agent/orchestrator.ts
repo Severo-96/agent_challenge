@@ -1,32 +1,15 @@
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import type { Response, ResponseInputItem } from "openai/resources/responses/responses";
-import { executeToolCall, getOpenAIResponsesTools } from "./tools/index.js";
+import { getOpenAIResponsesTools } from "../tools/index.js";
 import type {
   AgentOptions,
   AgentTurnResult,
   StreamCallbacks,
   ToolCall,
   ToolName,
-  ToolResult,
   StreamFunctionCallItem,
-} from "./types.js";
-
-const SYSTEM_PROMPT = `
-You are a useful and friendly assistant that can search for information about:
-- Countries (capital, population, region, currency, languages)
-- Exchange rate between currencies
-
-Use the available tools when necessary to answer the user's questions.
-Be clear, objective and friendly in your responses, whenever possible show a summary of the information shown.
-If you are not sure about something, be honest and say you don't know.
-
-If the user wants to exit, say that to exit he needs to type 'sair', 'quit', 'exit' or 'q'.
-If the user wants to clear the history, say that to clear the history he needs to type 'limpar', 'clear' or 'reset'.
-`.trim();
-
-export function systemMessage(): ChatCompletionMessageParam {
-  return { role: "system", content: SYSTEM_PROMPT };
-}
+} from "../types.js";
+import { executeToolCalls, extractFunctionToolCalls, toolResultsToFunctionCallOutputs } from "./functionCalling.js";
 
 export async function runAgentTurnStreaming(
   opts: AgentOptions,
@@ -34,7 +17,7 @@ export async function runAgentTurnStreaming(
   callbacks: StreamCallbacks
 ): Promise<AgentTurnResult> {
   const toolNamesThisTurn = new Set<ToolName>();
-  const toolResults: ToolResult[] = [];
+  const toolResults: import("../types.js").ToolResult[] = [];
 
   let assistantTextFinal = "";
   let previousResponseId: string | null = null;
@@ -130,32 +113,3 @@ async function runOneResponse(
   }
 }
 
-async function executeToolCalls(toolCalls: ToolCall[]): Promise<ToolResult[]> {
-  const results: ToolResult[] = [];
-  for (const call of toolCalls) {
-    const result = await executeToolCall(call);
-    results.push(result);
-  }
-  return results;
-}
-
-function extractFunctionToolCalls(response: Response): ToolCall[] {
-  const out: ToolCall[] = [];
-  for (const item of response.output as any[]) {
-    if (!item || item.type !== "function_call") continue;
-    out.push({
-      callId: item.call_id as string,
-      name: item.name as ToolName,
-      argumentsJson: item.arguments as string,
-    });
-  }
-  return out;
-}
-
-function toolResultsToFunctionCallOutputs(results: ToolResult[]): ResponseInputItem[] {
-  return results.map((r) => ({
-    type: "function_call_output",
-    call_id: r.toolCallId,
-    output: r.output,
-  }));
-}

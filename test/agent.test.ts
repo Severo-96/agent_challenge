@@ -11,7 +11,7 @@ vi.mock("../src/tools/index.js", () => {
   };
 });
 
-import { runAgentTurnStreaming } from "../src/agent.js";
+import { runAgentTurnStreaming } from "../src/agent/index.js";
 
 function makeMockStream(opts: {
   fire?: Array<{ event: string; payload: any }>;

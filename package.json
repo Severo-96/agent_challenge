@@ -1,0 +1,29 @@
+{
+  "name": "agent_challenge",
+  "version": "1.0.0",
+  "description": "CLI assistant in TypeScript using OpenAI tools, traces and SQLite memory.",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@dqbd/tiktoken": "^1.0.22",
+    "better-sqlite3": "^9.6.0",
+    "dotenv": "^16.4.5",
+    "inquirer": "^9.3.7",
+    "openai": "^4.77.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/inquirer": "^9.0.7",
+    "@types/node": "^20.17.10",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.3",
+    "vitest": "^1.6.0"
+  }
+}

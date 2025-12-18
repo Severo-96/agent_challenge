@@ -20,13 +20,13 @@ export function storeDeleteSession(store: SqliteStore, userId: number, sessionId
   }
 }
 
+const TOOL_LOG_MESSAGES: Record<string, string> = {
+  get_country_info: "- Buscando informação sobre países",
+  get_exchange_rate: "- Buscando taxas de câmbio",
+};
+
 export function logToolSearch(name: ToolName): void {
-  if (name === "get_country_info") {
-    process.stdout.write("- Buscando informação sobre países\n\n");
-  } else if (name === "get_exchange_rate") {
-    process.stdout.write("- Buscando taxas de câmbio\n\n");
-  } else {
-    process.stdout.write(`- Buscando: ${name}\n\n`);
-  }
+  const msg = TOOL_LOG_MESSAGES[name] ?? `- Buscando: ${name}`;
+  process.stdout.write(`${msg}\n\n`);
 }
 

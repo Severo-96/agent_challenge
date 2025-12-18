@@ -1,8 +1,9 @@
 import type { FunctionTool } from "openai/resources/responses/responses";
 import { z } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import { CountryInfoInput, getCountryInfo } from "./countries.js";
 import { ExchangeRateInput, getExchangeRate } from "./exchange.js";
-import type { ToolCall, ToolName, ToolResult } from "../types.js";
+import type { ToolCall, ToolResult } from "../types.js";
 
 function safeJsonParse(json: string): { success: true; data: unknown } | { success: false } {
   try {
@@ -35,21 +36,16 @@ async function parseAndRun<T>(
   return createToolResult(call, output);
 }
 
-function zodToJsonSchemaObject(zod: z.ZodObject<any>) {
-  const shape = zod.shape as Record<string, z.ZodTypeAny>;
-  const properties: Record<string, any> = {};
-  const required: string[] = [];
-
-  for (const [fieldName, fieldSchema] of Object.entries(shape)) {
-    const description = (fieldSchema as any)?._def?.description;
-    properties[fieldName] = { type: "string", ...(description ? { description } : {}) };
-    required.push(fieldName);
-  }
-
-  return { type: "object", properties, required, additionalProperties: false };
-}
-
 export function getOpenAIResponsesTools(): FunctionTool[] {
+  const countryParams = zodToJsonSchema(CountryInfoInput, { $refStrategy: "none" }) as Record<
+    string,
+    unknown
+  >;
+  const exchangeParams = zodToJsonSchema(ExchangeRateInput, { $refStrategy: "none" }) as Record<
+    string,
+    unknown
+  >;
+
   return [
     {
       type: "function",
@@ -57,7 +53,7 @@ export function getOpenAIResponsesTools(): FunctionTool[] {
       description:
         "Search for country information (capital, population, region, currency, languages). "
         + "Use when the user asks about countries. Country name must be in English.",
-      parameters: zodToJsonSchemaObject(CountryInfoInput),
+      parameters: countryParams,
       strict: true,
     },
     {
@@ -66,7 +62,7 @@ export function getOpenAIResponsesTools(): FunctionTool[] {
       description:
         "Search for the current exchange rate between two currencies. "
         + "Use when the user asks about currency conversion or exchange rate.",
-      parameters: zodToJsonSchemaObject(ExchangeRateInput),
+      parameters: exchangeParams,
       strict: true,
     },
   ];

@@ -57,8 +57,8 @@ describe("SqliteStore", () => {
     });
 
     test("isolates sessions by user", () => {
-      const store = new SqliteStore(makeTempDbPath());
-      try {
+    const store = new SqliteStore(makeTempDbPath());
+    try {
         const u1 = store.ensureUser("u1");
         const u2 = store.ensureUser("u2");
 
@@ -72,19 +72,19 @@ describe("SqliteStore", () => {
         expect(u2Sessions.length).toBe(1);
         expect(u1Sessions[0].firstMessage).toBe("user1 session");
         expect(u2Sessions[0].firstMessage).toBe("user2 session");
-      } finally {
-        store.close();
-      }
-    });
+    } finally {
+      store.close();
+    }
+  });
 
     test("listSessions returns dd-mm-YYYY format", () => {
-      const store = new SqliteStore(makeTempDbPath());
-      try {
+    const store = new SqliteStore(makeTempDbPath());
+    try {
         const userId = store.ensureUser("u1");
         store.createSession(userId, "First message");
         const sessions = store.listSessions(userId);
-        expect(sessions.length).toBe(1);
-        expect(sessions[0].updatedAt).toMatch(/^\d{2}-\d{2}-\d{4}$/);
+      expect(sessions.length).toBe(1);
+      expect(sessions[0].updatedAt).toMatch(/^\d{2}-\d{2}-\d{4}$/);
       } finally {
         store.close();
       }
@@ -192,19 +192,19 @@ describe("SqliteStore", () => {
         expect(messages[0].role).toBe("tool");
         expect(messages[0].toolName).toBe("get_country_info");
         expect(messages[0].toolCallId).toBe("call_123");
-      } finally {
-        store.close();
-      }
-    });
+    } finally {
+      store.close();
+    }
+  });
 
-    test("appendMessage rejects session not owned by user", () => {
-      const store = new SqliteStore(makeTempDbPath());
-      try {
+  test("appendMessage rejects session not owned by user", () => {
+    const store = new SqliteStore(makeTempDbPath());
+    try {
         const u1 = store.ensureUser("u1");
         const u2 = store.ensureUser("u2");
         const { sessionId } = store.createSession(u1, "hello");
 
-        expect(() =>
+      expect(() =>
           store.appendMessage({ userId: u2, sessionId, role: "user", content: "nope" })
         ).toThrow("Session not found for user");
       } finally {
@@ -263,11 +263,11 @@ describe("SqliteStore", () => {
       try {
         const userId = store.ensureUser("u1");
         expect(() => store.clearMessages(userId, 9999)).toThrow("Session not found for user");
-      } finally {
-        store.close();
-      }
-    });
+    } finally {
+      store.close();
+    }
   });
+});
 
   describe("replaceAllMessagesWithSummary", () => {
     test("replaces all messages with summary", () => {

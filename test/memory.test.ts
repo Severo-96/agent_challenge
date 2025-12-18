@@ -3,7 +3,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SqliteStore } from "../src/db.js";
-import { buildContextMessages, maybeSummarizeSession } from "../src/memory/index.js";
+import { buildContextMessages, summarizeSessionIfNeeded } from "../src/memory/index.js";
 import { systemMessage } from "../src/agent/index.js";
 
 function makeTempDbPath(): string {
@@ -24,15 +24,15 @@ describe("memory/context", () => {
     });
 
     test("keeps messages in chronological order", () => {
-      const messages = [
+    const messages = [
         { role: "user" as const, content: "first" },
         { role: "assistant" as const, content: "second" },
         { role: "user" as const, content: "third" },
-      ];
+    ];
 
-      const out = buildContextMessages({
-        system: systemMessage(),
-        messages,
+    const out = buildContextMessages({
+      system: systemMessage(),
+      messages,
       });
 
       expect(out.length).toBe(4); // system + 3 messages
@@ -50,12 +50,12 @@ describe("memory/context", () => {
       const out = buildContextMessages({
         system: systemMessage(),
         messages,
-      });
-
-      const allText = out.map((m) => (typeof m.content === "string" ? m.content : "")).join("\n");
-      expect(allText).toContain("120 messages summarized");
-      expect(allText).toContain("hi");
     });
+
+    const allText = out.map((m) => (typeof m.content === "string" ? m.content : "")).join("\n");
+      expect(allText).toContain("120 messages summarized");
+    expect(allText).toContain("hi");
+  });
 
     test("filters out tool messages without toolCallId", () => {
       const messages = [
@@ -119,10 +119,10 @@ describe("memory/context", () => {
 });
 
 describe("memory/summarize", () => {
-  describe("maybeSummarizeSession", () => {
+  describe("summarizeSessionIfNeeded", () => {
     test("does NOT summarize when below token threshold", async () => {
-      const store = new SqliteStore(makeTempDbPath());
-      try {
+    const store = new SqliteStore(makeTempDbPath());
+    try {
         const userId = store.ensureUser("u1");
         const { sessionId } = store.createSession(userId, "test");
 
@@ -136,7 +136,7 @@ describe("memory/summarize", () => {
           },
         };
 
-        const did = await maybeSummarizeSession({
+        const did = await summarizeSessionIfNeeded({
           openai: openaiMock,
           store,
           userId,
@@ -169,32 +169,32 @@ describe("memory/summarize", () => {
             sessionId,
             role: i % 2 === 0 ? "user" : "assistant",
             content: `message ${i} with some content`,
-          });
-        }
-
-        const openaiMock: any = {
-          responses: {
-            create: vi.fn().mockResolvedValue({ output_text: "Summary of the conversation" }),
-          },
-        };
-
-        const did = await maybeSummarizeSession({
-          openai: openaiMock,
-          store,
-          userId,
-          sessionId,
-          model: "gpt-4.1-mini",
-          summaryTokenTarget: 50,
-          summaryTriggerTokens: 10, // Very low threshold to trigger
         });
+      }
 
-        expect(did).toBe(true);
+      const openaiMock: any = {
+        responses: {
+            create: vi.fn().mockResolvedValue({ output_text: "Summary of the conversation" }),
+        },
+      };
+
+      const did = await summarizeSessionIfNeeded({
+        openai: openaiMock,
+        store,
+          userId,
+        sessionId,
+        model: "gpt-4.1-mini",
+        summaryTokenTarget: 50,
+          summaryTriggerTokens: 10, // Very low threshold to trigger
+      });
+
+      expect(did).toBe(true);
         expect(openaiMock.responses.create).toHaveBeenCalled();
 
         const msgs = store.getMessages(userId, sessionId);
-        expect(msgs.length).toBe(1);
-        expect(msgs[0].role).toBe("assistant");
-        expect(msgs[0].content).toContain("Resume of previous conversation");
+      expect(msgs.length).toBe(1);
+      expect(msgs[0].role).toBe("assistant");
+      expect(msgs[0].content).toContain("Resume of previous conversation");
         expect(msgs[0].content).toContain("Summary of the conversation");
       } finally {
         store.close();
@@ -223,7 +223,7 @@ describe("memory/summarize", () => {
           },
         };
 
-        await maybeSummarizeSession({
+        await summarizeSessionIfNeeded({
           openai: openaiMock,
           store,
           userId,
@@ -261,7 +261,7 @@ describe("memory/summarize", () => {
           },
         };
 
-        const did = await maybeSummarizeSession({
+        const did = await summarizeSessionIfNeeded({
           openai: openaiMock,
           store,
           userId,
@@ -302,7 +302,7 @@ describe("memory/summarize", () => {
           },
         };
 
-        const did = await maybeSummarizeSession({
+        const did = await summarizeSessionIfNeeded({
           openai: openaiMock,
           store,
           userId,
@@ -336,7 +336,7 @@ describe("memory/summarize", () => {
           },
         };
 
-        await maybeSummarizeSession({
+        await summarizeSessionIfNeeded({
           openai: openaiMock,
           store,
           userId,
@@ -357,9 +357,9 @@ describe("memory/summarize", () => {
             }),
           })
         );
-      } finally {
-        store.close();
-      }
-    });
+    } finally {
+      store.close();
+    }
   });
+});
 });

@@ -12,7 +12,7 @@ const ROLE_LABEL: Record<Role, string> = {
 
 const SUMMARY_TEMPERATURE = 0.3;
 
-export async function maybeSummarizeSession(opts: {
+export async function summarizeSessionIfNeeded(opts: {
   openai: OpenAI;
   store: SqliteStore;
   userId: number;

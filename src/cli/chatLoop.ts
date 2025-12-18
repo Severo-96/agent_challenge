@@ -1,11 +1,12 @@
 import { createInterface } from "node:readline";
 import type OpenAI from "openai";
 import type { SqliteStore } from "../db.js";
-import { systemMessage, runAgentTurnStreaming } from "../agent/index.js";
-import { buildContextMessages, maybeSummarizeSession } from "../memory/index.js";
 import type { AppConfig } from "../types.js";
-import { EXIT_COMMANDS, CLEAR_COMMANDS } from "./constants.js";
-import { truncateFirstMessage, storeDeleteSession, logToolSearch } from "./ui.js";
+import { storeDeleteSession, logToolSearch } from "./ui.js";
+import { ConversationService } from "../services/conversation.js";
+
+export const EXIT_COMMANDS = new Set(["sair", "quit", "exit", "q"]);
+export const CLEAR_COMMANDS = new Set(["limpar", "clear", "reset"]);
 
 export async function chatLoop(opts: {
   config: AppConfig;
@@ -18,6 +19,14 @@ export async function chatLoop(opts: {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   const askLine = (prompt: string) =>
     new Promise<string>((resolve) => rl.question(prompt, resolve));
+
+  const conversationService = new ConversationService({
+    store: opts.store,
+    openai: opts.openai,
+    config: opts.config,
+    userId: opts.userId,
+    userLogin: opts.userLogin,
+  });
 
   let interrupted = false;
   const onSigInt = () => {
@@ -56,88 +65,29 @@ export async function chatLoop(opts: {
 
       if (!userInput) continue;
 
-      // Create session on first message
-      if (opts.sessionId == null) {
-        const firstMessageForSession = truncateFirstMessage(userInput);
-        const createdSession = opts.store.createSession(opts.userId, firstMessageForSession);
-        opts.sessionId = createdSession.sessionId;
-      }
-
-      // Persist user message
-      opts.store.appendMessage({
-        userId: opts.userId,
-        sessionId: opts.sessionId,
-        role: "user",
-        content: userInput,
-      });
-
       console.log("\n🤖 Assistente: Analisando...\n");
 
-      const stored = opts.store.getMessages(opts.userId, opts.sessionId);
-      const messages = buildContextMessages({
-        system: systemMessage(),
-        messages: stored,
-      });
-
       let assistantText = "";
-      const result = await runAgentTurnStreaming(
-        {
-          openai: opts.openai,
-          model: opts.config.modelName,
-          temperature: opts.config.temperature,
-          metadata: {
-            userId: String(opts.userId),
-            userLogin: opts.userLogin,
-            sessionId: String(opts.sessionId),
-          },
+      const result = await conversationService.processUserMessage(userInput, opts.sessionId, {
+        onTextDelta: (t) => {
+          assistantText += t;
+          process.stdout.write(t);
         },
-        messages,
-        {
-          onTextDelta: (t) => {
-            assistantText += t;
-            process.stdout.write(t);
-          },
-          onToolName: (name) => {
-            logToolSearch(name);
-          },
-        }
-      );
+        onToolName: (name) => {
+          logToolSearch(name);
+        },
+      });
 
       // Ensure newline after streaming to prevent readline from overwriting
       process.stdout.write("\n");
 
-      // Persist tool outputs
-      for (const tr of result.toolResults) {
-        opts.store.appendMessage({
-          userId: opts.userId,
-          sessionId: opts.sessionId,
-          role: "tool",
-          content: tr.output,
-          toolName: tr.name,
-          toolCallId: tr.toolCallId,
-        });
+      opts.sessionId = result.sessionId;
+
+      if (result.assistantText.trim().length === 0) {
+        process.stdout.write("(sem resposta)\n");
       }
 
-      // Persist assistant response
-      const finalText = (assistantText || result.assistantText || "").trim();
-      opts.store.appendMessage({
-        userId: opts.userId,
-        sessionId: opts.sessionId,
-        role: "assistant",
-        content: finalText.length ? finalText : "(sem resposta)",
-      });
-
-      // Context control: summarize when needed
-      const summarized = await maybeSummarizeSession({
-        openai: opts.openai,
-        store: opts.store,
-        userId: opts.userId,
-        sessionId: opts.sessionId,
-        model: opts.config.modelName,
-        summaryTokenTarget: opts.config.summaryTokenTarget,
-        summaryTriggerTokens: opts.config.summaryTriggerTokens,
-      });
-      if (summarized) {
+      if (result.summarized) {
         console.log("\n\n📝 Mensagens antigas resumidas... ✅\n");
       }
     }

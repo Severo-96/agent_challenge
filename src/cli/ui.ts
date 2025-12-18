@@ -1,6 +1,5 @@
 import type { ToolName } from "../types.js";
 import type { SqliteStore } from "../db.js";
-import { MAX_MESSAGE_LENGTH } from "./constants.js";
 
 export function printBanner(): void {
   console.log("=".repeat(60));
@@ -11,11 +10,6 @@ export function printBanner(): void {
   console.log("  • Taxas de câmbio");
   console.log("=".repeat(60));
   console.log();
-}
-
-export function truncateFirstMessage(msg: string): string {
-  if (msg.length <= MAX_MESSAGE_LENGTH) return msg;
-  return msg.slice(0, MAX_MESSAGE_LENGTH - 3) + "...";
 }
 
 export function storeDeleteSession(store: SqliteStore, userId: number, sessionId: number): void {

@@ -17,28 +17,28 @@ describe("tools", () => {
 
   describe("getCountryInfo", () => {
     test("formats success response correctly", async () => {
-      (globalThis.fetch as any).mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: async () => [
-          {
-            name: { common: "Brazil" },
-            capital: ["Brasília"],
-            population: 212559417,
-            region: "Americas",
-            currencies: { BRL: {} },
-            languages: { por: "Portuguese" },
-          },
-        ],
-      });
+    (globalThis.fetch as any).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => [
+        {
+          name: { common: "Brazil" },
+          capital: ["Brasília"],
+          population: 212559417,
+          region: "Americas",
+          currencies: { BRL: {} },
+          languages: { por: "Portuguese" },
+        },
+      ],
+    });
 
-      const out = await getCountryInfo("Brazil");
+    const out = await getCountryInfo("Brazil");
       expect(out).toContain("Information about Brazil");
-      expect(out).toContain("Brasília");
-      expect(out).toContain("Americas");
+    expect(out).toContain("Brasília");
+    expect(out).toContain("Americas");
       expect(out).toContain("Currency: BRL");
       expect(out).toContain("Languages: Portuguese");
-    });
+  });
 
     test("handles API error response", async () => {
       (globalThis.fetch as any).mockResolvedValue({
@@ -95,16 +95,16 @@ describe("tools", () => {
 
   describe("getExchangeRate", () => {
     test("formats success response correctly", async () => {
-      (globalThis.fetch as any).mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: async () => ({ rates: { BRL: 5.0 }, date: "2024-01-01" }),
-      });
+    (globalThis.fetch as any).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ rates: { BRL: 5.0 }, date: "2024-01-01" }),
+    });
 
-      const out = await getExchangeRate("usd", "brl");
-      expect(out).toContain("USD → BRL");
-      expect(out).toContain("5.0000");
-      expect(out).toContain("2024-01-01");
+    const out = await getExchangeRate("usd", "brl");
+    expect(out).toContain("USD → BRL");
+    expect(out).toContain("5.0000");
+    expect(out).toContain("2024-01-01");
     });
 
     test("handles API error response", async () => {

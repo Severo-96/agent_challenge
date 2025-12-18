@@ -3,7 +3,7 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { CountryInfoInput, getCountryInfo } from "./countries.js";
 import { ExchangeRateInput, getExchangeRate } from "./exchange.js";
-import type { ToolCall, ToolResult } from "../types.js";
+import type { ToolCall, ToolName, ToolResult } from "../types.js";
 
 function safeJsonParse(json: string): { success: true; data: unknown } | { success: false } {
   try {
@@ -36,48 +36,45 @@ async function parseAndRun<T>(
   return createToolResult(call, output);
 }
 
-export function getOpenAIResponsesTools(): FunctionTool[] {
-  const countryParams = zodToJsonSchema(CountryInfoInput, { $refStrategy: "none" }) as Record<
-    string,
-    unknown
-  >;
-  const exchangeParams = zodToJsonSchema(ExchangeRateInput, { $refStrategy: "none" }) as Record<
-    string,
-    unknown
-  >;
+type ToolHandler<T> = {
+  name: ToolName;
+  description: string;
+  schema: z.ZodType<T>;
+  runner: (data: T) => Promise<string>;
+};
 
-  return [
-    {
-      type: "function",
-      name: "get_country_info",
-      description:
-        "Search for country information (capital, population, region, currency, languages). "
-        + "Use when the user asks about countries. Country name must be in English.",
-      parameters: countryParams,
-      strict: true,
-    },
-    {
-      type: "function",
-      name: "get_exchange_rate",
-      description:
-        "Search for the current exchange rate between two currencies. "
-        + "Use when the user asks about currency conversion or exchange rate.",
-      parameters: exchangeParams,
-      strict: true,
-    },
-  ];
+const TOOL_REGISTRY: ToolHandler<any>[] = [
+  {
+    name: "get_country_info",
+    description:
+      "Search for country information (capital, population, region, currency, languages). "
+      + "Use when the user asks about countries. Country name must be in English.",
+    schema: CountryInfoInput,
+    runner: (data: z.infer<typeof CountryInfoInput>) => getCountryInfo(data.country_name),
+  },
+  {
+    name: "get_exchange_rate",
+    description:
+      "Search for the current exchange rate between two currencies. "
+      + "Use when the user asks about currency conversion or exchange rate.",
+    schema: ExchangeRateInput,
+    runner: (data: z.infer<typeof ExchangeRateInput>) =>
+      getExchangeRate(data.base_currency, data.target_currency),
+  },
+];
+
+export function getOpenAIResponsesTools(): FunctionTool[] {
+  return TOOL_REGISTRY.map((tool) => ({
+    type: "function",
+    name: tool.name,
+    description: tool.description,
+    parameters: zodToJsonSchema(tool.schema, { $refStrategy: "none" }) as Record<string, unknown>,
+    strict: true,
+  }));
 }
 
 export async function executeToolCall(call: ToolCall): Promise<ToolResult> {
-  if (call.name === "get_country_info") {
-    return parseAndRun(call, CountryInfoInput, (data) => getCountryInfo(data.country_name));
-  }
-
-  if (call.name === "get_exchange_rate") {
-    return parseAndRun(call, ExchangeRateInput, (data) =>
-      getExchangeRate(data.base_currency, data.target_currency)
-    );
-  }
-
-  return createToolResult(call, "Tool not implemented.");
+  const tool = TOOL_REGISTRY.find((t) => t.name === call.name);
+  if (!tool) return createToolResult(call, "Tool not implemented.");
+  return parseAndRun(call, tool.schema, tool.runner);
 }
